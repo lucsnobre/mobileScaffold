@@ -1,15 +1,15 @@
 package lobo.cachorrada.clientesapi.screens
 
 
+import android.content.res.Configuration
 import android.util.Patterns
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -26,18 +26,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import lobo.cachorrada.clientesapi.model.Cliente
-import lobo.cachorrada.clientesapi.ui.theme.ClientesAppTheme
+import lobo.cachorrada.clientesapi.service.RetrofitFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import lobo.cachorrada.clientesapi.service.RetrofitFactory
 import retrofit2.await
 
 @Composable
-fun FormCliente(modifier: Modifier = Modifier) {
-
-    // variáveis de estado para utilizar no otulined
+fun FormCliente(navController: NavHostController?) {
     var nomeCliente by remember {
         mutableStateOf("")
     }
@@ -45,9 +43,10 @@ fun FormCliente(modifier: Modifier = Modifier) {
         mutableStateOf("")
     }
 
-    // variáveis de estado para validar a entrada do usuário
     var isNomeError by remember { mutableStateOf(false) }
     var isEmailError by remember { mutableStateOf(false) }
+
+    val clienteApi = RetrofitFactory().getClienteService()
 
     fun validar(): Boolean{
         isNomeError = nomeCliente.length < 1
@@ -55,42 +54,41 @@ fun FormCliente(modifier: Modifier = Modifier) {
         return !isNomeError && !isEmailError
     }
 
-    var mostrarTelaSucesso
-
-    // Criar uma instância do RetrofitFactory
-    val clienteApi = RetrofitFactory().getClienteService()
+    var mostraTelaSucesso by remember {
+        mutableStateOf(true)
+    }
 
     Column(
         modifier = Modifier
             .padding(16.dp)
-            .fillMaxSize()
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row (
-            verticalAlignment = Alignment.CenterVertically
-        ){
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "icone do cadastro"
-            )
-            Text(
-                text = "Novo cliente",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
-            )
-
-        }
+        Text(
+            text = "Criar um novo cliente",
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold
+        )
         OutlinedTextField(
             value = nomeCliente,
-            onValueChange = { nome ->
+            onValueChange = {nome ->
                 nomeCliente = nome
             },
             label = {
-                Text(text = "Nome do cliente")
+                Text(
+                    text = "Nome do cliente",
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             },
             supportingText = {
-                if (isNomeError){
-                    Text(text = "Nome do cliente é obrigatório")
+                if(isNomeError){
+                    Text(
+                        text = "Nome é obrigatorio",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
+
             },
             trailingIcon = {
                 if(isNomeError){
@@ -98,75 +96,92 @@ fun FormCliente(modifier: Modifier = Modifier) {
                 }
             },
             isError = isNomeError,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
         )
         OutlinedTextField(
             value = emailCliente,
-            onValueChange = { email ->
+            onValueChange = {email ->
                 emailCliente = email
             },
             label = {
-                Text(text = "E-mail do cliente")
+                Text(
+                    text = "Email do cliente",
+                    color = MaterialTheme.colorScheme.onBackground
+                )
             },
             supportingText = {
-                if (isEmailError){
-                    Text(text = "E-mail do cliente é obrigatório!")
+                if(isEmailError){
+                    Text(
+                        text = "Email é obrigatorio",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             },
             trailingIcon = {
-                if (isEmailError){
-                    Icon(imageVector = Icons.Default.Info, contentDescription = "Erro")
+                if(isEmailError){
+                    Icon(imageVector = Icons.Default.Info, contentDescription = "erro")
                 }
             },
             isError = isEmailError,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
         )
         Button(
             onClick = {
-                // Criar um cliente com os dados informados
-                if (validar()){
+                if(validar()){
+                    // criar cliente
                     val cliente = Cliente(
                         nome = nomeCliente,
                         email = emailCliente
                     )
-                    // Requisição POST para a API
                     GlobalScope.launch(Dispatchers.IO) {
                         val novoCliente = clienteApi.gravar(cliente).await()
-                        mostrarTelaSucesso = True
                     }
-                } else {
-                    println("******* Os dados estão incorretos!")
+                    navController?.navigate("Home")
+                }else{
+                    println("************** Tudo errado")
                 }
+
+
             },
             modifier = Modifier
                 .padding(top = 32.dp)
                 .fillMaxWidth()
         ) {
-            Text(text = "Gravar Cliente")
+            Text(
+                text = "Salvar Cliente"
+            )
         }
-
-        if (mostrarTelaSucesso) {
+        if (mostraTelaSucesso){
             AlertDialog(
                 onDismissRequest = {},
-                title = {Text(text = "Sucesso")},
-                text = { Text(text = "Cliente gravado com sucesso!")},
+                title = {
+                    Text(
+                        text = "Sucesso!"
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Cliente criado com sucesso"
+                    )
+                },
                 confirmButton = {
-                    Button(onClick = {
-
-                    }) { Text(text = "OK")
-
+                    Button(
+                        onClick = {}
+                    ) {
+                        Text(
+                            text = "ok"
+                        )
                     }
                 }
             )
         }
     }
-
 }
 
-@Preview(showBackground = true)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun FormClientePreview() {
-    ClientesAppTheme {
-        FormCliente()
-    }
-}}
+    FormCliente(null)
+}
